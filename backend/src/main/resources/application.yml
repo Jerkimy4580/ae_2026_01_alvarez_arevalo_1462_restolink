@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: restaurant-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://restaurant-db:5432/restaurant}
+    username: ${DB_USERNAME:restaurant_user}
+    password: ${DB_PASSWORD:restaurant_pass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+
+  logging:
+    level:
+      org.hibernate.SQL: DEBUG
+      org.hibernate.orm.jdbc.bind: TRACE
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_dVFfTH2gg}
+
+cognito:
+  user-pool-id: ${COGNITO_USER_POOL_ID:us-east-1_dVFfTH2gg}
+  app-client-id: ${COGNITO_APP_CLIENT_ID:5447p84r72dpda0ifsp6vgqb7j}
+  domain-base: ${COGNITO_DOMAIN_BASE:https://us-east-1dvffth2gg.auth.us-east-1.amazoncognito.com}
+  redirect-uri: ${COGNITO_REDIRECT_URI:miapp://callback}
+
+# --- COMUNICACIÓN ENTRE MICROSERVICIOS ---
+# Cambiar localhost por client-preferences-service para que funcione en Docker
+services:
+  client-preferences:
+    url: ${CLIENT_PREFERENCES_SERVICE_URL:http://client-preferences-service:8082}
