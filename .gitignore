@@ -1,0 +1,53 @@
+﻿# Environment files
+.env
+.env.local
+local.properties
+
+# Gradle files
+.gradle/
+build/
+**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Compiled class files
+*.class
+
+# JAR/WAR/EAR files
+*.jar
+*.war
+*.ear
+
+# Temporary files
+tmp/
+*.tmp
+
+# Docker
+docker-compose.override.yml
+
+# Kotlin/Java generated
+*.kt.lock
+
+# Other
+out/
+
+# Windows / Gradle Wrapper temporal
+.gradletasknamecache
