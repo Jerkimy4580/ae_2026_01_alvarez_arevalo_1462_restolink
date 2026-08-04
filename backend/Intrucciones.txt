@@ -1,0 +1,70 @@
+Actúa como un Ingeniero de Software Principal experto en Kotlin y Spring Boot 4. Necesito que generes la estructura completa de código para el backend de un microservicio de restaurante. 
+
+El proyecto debe seguir una arquitectura en capas limpia (Controllers, Services, Repositories, Entities, DTOs, Mappers, Exceptions, Config) y cumplir estrictamente con los siguientes requisitos técnicos e historias de usuario:
+
+### 🛠️ STACK TECNOLÓGICO:
+1. Lenguaje: Kotlin.
+2. Framework: Spring Boot 4.
+3. Base de Datos: AWS Aurora PostgreSQL (usar Spring Data JPA).
+4. Autenticación y Seguridad: AWS Cognito mediante verificación de tokens JWT (Spring Security).
+
+### 👥 ROLES EN COGNITO (JWT Claims):
+- CHEF: Administra el menú.
+- WAITER (Mesero): Gestiona los estados de los pedidos y cobros.
+- CLIENT (Cliente): Realiza los pedidos.
+
+---
+
+### 📊 1. MODELO DE BASE DE DATOS (Entities)
+Genera las siguientes 3 tablas de dominio utilizando JPA. NOTA CRÍTICA: No crees tablas de usuarios ni roles en la base de datos local; los usuarios se identifican por su string 'username' proveniente del JWT de Cognito.
+
+1. *Dish (Platos)*
+   - id: BIGINT (PK, Autoincremental)
+   - name: VARCHAR(100)
+   - price: DECIMAL(10,2)
+   - isAvailable: BOOLEAN
+
+2. *Order (Pedidos)*
+   - id: BIGINT (PK, Autoincremental)
+   - tableNumber: INT
+   - clientUser: VARCHAR(60) (Nullable, guarda el username del JWT si el cliente pide por la app)
+   - status: VARCHAR(30) (Valores: "PENDING", "DELIVERED", "PAID")
+   - totalAmount: DECIMAL(10,2)
+   - createdAt: TIMESTAMP
+
+3. *OrderItem (Ítems del pedido)*
+   - id: BIGINT (PK, Autoincremental)
+   - order: Relación ManyToOne con Order
+   - dish: Relación ManyToOne con Dish
+   - quantity: INT
+
+---
+
+### 🔐 2. MATRIZ DE SEGURIDAD Y ENDPOINTS (Controllers)
+Implementa un único controlador o controladores modulares con las siguientes reglas de acceso mediante anotaciones @PreAuthorize:
+
+1. GET /api/v1/dishes -> *PÚBLICO* (Permite a cualquier Cliente ver el menú escaneando el QR sin loguearse).
+2. POST /api/v1/dishes -> *PRIVADO* (Solo Rol 'CHEF'). Permite crear platos y precios.
+3. POST /api/v1/orders -> *PRIVADO* (Roles 'CLIENT' o 'WAITER'). Permite guardar la orden y sus items calculando el total.
+4. PATCH /api/v1/orders/{id}/status -> *PRIVADO* (Solo Rol 'WAITER'). Modifica el estado del pedido a DELIVERED o PAID.
+5. GET /api/v1/orders/me -> *PRIVADO* (Solo Rol 'CLIENT' con validación de propiedad). 
+   * REQUISITO DE PROPIEDAD: En la capa Service, debes validar estrictamente que el order.clientUser en la base de datos sea EXACTAMENTE IGUAL al username extraído del JWT (jwt.username). Si no coincide, debe lanzar un AccessDeniedException personalizado que se convierta en un error HTTP 403.
+
+---
+
+### 📂 3. ARQUITECTURA DE ARCHIVOS REQUERIDA:
+Por favor, genera el código limpio organizado en los siguientes paquetes:
+- config: Configuración de Spring Security para JWT con AWS Cognito y mapeo de claims a GrantedAuthority.
+- entity: Modelos JPA (Dish, Order, OrderItem).
+- repository: Interfaces de Spring Data.
+- dto: Clases de transferencia de datos para requests y responses.
+- mapper: Funciones de extensión de Kotlin o mappers manuales para convertir de Entity a DTO y viceversa.
+- service: Interfaces e implementaciones con la lógica de negocio, cálculo de totales y validación de propiedad (403).
+- controller: Endpoints REST expuestos con las debidas anotaciones de seguridad.
+- exception: Un @RestControllerAdvice global para capturar errores habituales, convirtiendo faltas de token en HTTP 401 y violaciones de rol/propiedad en HTTP 403 de forma limpia.
+
+Escribe el código completo en Kotlin, listo para producción y estructurado para que dos personas puedan trabajar sobre él inmediatamente.
+
+
+crear las vistas para cada rol y rol admin 
+crear login dentro de la app
