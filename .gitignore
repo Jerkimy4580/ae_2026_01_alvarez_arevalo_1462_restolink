@@ -51,3 +51,7 @@ out/
 
 # Windows / Gradle Wrapper temporal
 .gradletasknamecache
+
+# Archivos compilados de Eclipse/STS
+bin/
+**/bin/
