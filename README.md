@@ -172,3 +172,10 @@ Usar estos archivos para ejecutar los flujos de autenticación y los endpoints p
 - El diagrama de arquitectura está en la sección 3.
 - Este README inicializa con los nombres completos de los integrantes, el NRC, el nombre del proyecto y la URL desplegada cuando esté disponible.
 - Completar con los nombres del equipo y el NRC antes de la entrega final.
+
+Pruebas de los test:
+
+![alt text](image.png)
+
+
+![alt text](image-1.png)
