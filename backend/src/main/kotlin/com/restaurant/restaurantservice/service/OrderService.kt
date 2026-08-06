@@ -108,7 +108,7 @@ class OrderServiceImpl(
 
                 if (conflicts.isNotEmpty()) {
                     val conflict = conflicts.first()
-                    throw AllergenConflictException("El plato ${conflict.first} contiene ${conflict.second}, al cual eres alérgico")
+                    throw AllergenConflictException("This dish ${conflict.first} contains ${conflict.second}, to which you are allergic.")
                 }
             }
         }
@@ -212,7 +212,7 @@ class OrderServiceImpl(
         } catch (ex: WebClientResponseException.NotFound) {
             null
         } catch (ex: WebClientResponseException.Unauthorized) {
-            throw ForbiddenAccessException("No tienes autorización para consultar las preferencias de este cliente")
+            throw ForbiddenAccessException("You are not authorized to view this customer's preferences")
         } catch (ex: Exception) {
             // Manejador opcional por si el servicio de preferencias está caído o inaccesible
             null

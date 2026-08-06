@@ -66,7 +66,7 @@ http://localhost:80
            |                               |
    +-------+--------+             +--------+-------+
    | restaurant-db  |             | client-preferences-db |
-   | postgres:16-alpine |         | postgres:16-alpine    |
+   | postgreSQL    |              | postgreSQL           |
    +-----------------+             +---------------------+
 ```
 

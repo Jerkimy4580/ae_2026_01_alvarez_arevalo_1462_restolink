@@ -6,14 +6,14 @@ spring:
     name: client-preferences-service
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://client-preferences-db:5432/client_preferences}
-    username: ${DB_USERNAME:preferences_user}
-    password: ${DB_PASSWORD:preferences_pass}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
@@ -24,7 +24,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_dVFfTH2gg}
+          issuer-uri: ${COGNITO_ISSUER_URI}
 
 logging:
   level:
@@ -32,7 +32,7 @@ logging:
     org.hibernate.orm.jdbc.bind: TRACE
 
 cognito:
-  user-pool-id: ${COGNITO_USER_POOL_ID:us-east-1_dVFfTH2gg}
-  app-client-id: ${COGNITO_APP_CLIENT_ID:5447p84r72dpda0ifsp6vgqb7j}
-  domain-base: ${COGNITO_DOMAIN_BASE:https://us-east-1dvffth2gg.auth.us-east-1.amazoncognito.com}
-  redirect-uri: ${COGNITO_REDIRECT_URI:miapp://callback}
+  user-pool-id: ${COGNITO_USER_POOL_ID}
+  app-client-id: ${COGNITO_APP_CLIENT_ID}
+  domain-base: ${COGNITO_DOMAIN_BASE}
+  redirect-uri: ${COGNITO_REDIRECT_URI}
