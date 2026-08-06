@@ -33,6 +33,8 @@ import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.util.DefaultUriBuilderFactory
+import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Mono
 import java.math.BigDecimal
 import java.util.Optional
@@ -106,21 +108,70 @@ class OrderServiceTest {
         return order
     }
 
+    /**
+     * Mock del WebClient que SÍ ejecuta las lambdas reales pasadas por el service:
+     * - la función de .uri { uriBuilder -> ... } (cubre uriBuilder.path(...).build(username))
+     * - el consumer de .headers { headers -> ... } (cubre el if (!bearerToken.isNullOrBlank()))
+     */
     private fun mockWebClientCall(responseMono: Mono<ClientPreferenceResponse>): WebClient {
         val mockWebClient = Mockito.mock(WebClient::class.java)
+
         @Suppress("UNCHECKED_CAST")
-        val requestHeadersUriSpec = Mockito.mock(WebClient.RequestHeadersUriSpec::class.java) as WebClient.RequestHeadersUriSpec<*>
+        val requestHeadersUriSpec =
+            Mockito.mock(WebClient.RequestHeadersUriSpec::class.java) as WebClient.RequestHeadersUriSpec<*>
+
         @Suppress("UNCHECKED_CAST")
-        val requestHeadersSpec = Mockito.mock(WebClient.RequestHeadersSpec::class.java) as WebClient.RequestHeadersSpec<*>
+        val requestHeadersSpec =
+            Mockito.mock(WebClient.RequestHeadersSpec::class.java) as WebClient.RequestHeadersSpec<*>
+
         val responseSpec = Mockito.mock(WebClient.ResponseSpec::class.java)
 
-        Mockito.`when`(mockWebClient.get()).thenReturn(requestHeadersUriSpec)
+        Mockito.`when`(mockWebClient.get())
+            .thenReturn(requestHeadersUriSpec)
+
         Mockito.`when`(
-            requestHeadersUriSpec.uri(Mockito.any<java.util.function.Function<org.springframework.web.util.UriBuilder, java.net.URI>>())
-        ).thenReturn(requestHeadersSpec)
-        Mockito.`when`(requestHeadersSpec.headers(Mockito.any())).thenReturn(requestHeadersSpec)
-        Mockito.`when`(requestHeadersSpec.retrieve()).thenReturn(responseSpec)
-        Mockito.`when`(responseSpec.bodyToMono(ClientPreferenceResponse::class.java)).thenReturn(responseMono)
+            requestHeadersUriSpec.uri(
+                Mockito.any<java.util.function.Function<org.springframework.web.util.UriBuilder, java.net.URI>>()
+            )
+        ).thenAnswer { invocation ->
+
+            val fn =
+                invocation.getArgument<java.util.function.Function<org.springframework.web.util.UriBuilder, java.net.URI>>(0)
+
+            val builder = UriComponentsBuilder
+                .fromPath("")
+                .build()
+                .toUriString()
+
+            val uriBuilder = DefaultUriBuilderFactory(builder).builder()
+
+            // Ejecuta el lambda real del servicio (cubre uriBuilder.path(...).build(username))
+            fn.apply(uriBuilder)
+
+            requestHeadersSpec
+        }
+
+        Mockito.`when`(
+            requestHeadersSpec.headers(Mockito.any())
+        ).thenAnswer { invocation ->
+
+            val consumer =
+                invocation.getArgument<java.util.function.Consumer<HttpHeaders>>(0)
+
+            val headers = HttpHeaders()
+
+            // Ejecuta el lambda real del servicio (cubre el if (!bearerToken.isNullOrBlank()))
+            consumer.accept(headers)
+
+            requestHeadersSpec
+        }
+
+        Mockito.`when`(requestHeadersSpec.retrieve())
+            .thenReturn(responseSpec)
+
+        Mockito.`when`(
+            responseSpec.bodyToMono(ClientPreferenceResponse::class.java)
+        ).thenReturn(responseMono)
 
         return mockWebClient
     }
@@ -501,6 +552,75 @@ class OrderServiceTest {
     }
 
     @Test
+    fun `fetchClientPreferences should skip header when there is no request context at all`() {
+        RequestContextHolder.resetRequestAttributes()
+
+        val restaurant = createRestaurant(1L)
+        val dish = createDish(3L, "Pizza", BigDecimal("8.00"), true, restaurant)
+
+        Mockito.`when`(restaurantRepository.findById(1L)).thenReturn(Optional.of(restaurant))
+        Mockito.`when`(dishRepository.findByRestaurantId(1L)).thenReturn(listOf(dish))
+        Mockito.`when`(orderRepository.findLatestActiveOrderByClientUser("user", 1L, listOf(OrderStatus.PAID, OrderStatus.RETURNED)))
+            .thenReturn(Optional.empty())
+        Mockito.`when`(orderRepository.save(Mockito.any(Order::class.java))).thenAnswer { invocation -> invocation.getArgument<Order>(0) }
+
+        val mockWebClient = mockWebClientCall(Mono.empty())
+        ReflectionTestUtils.setField(orderService, "clientPreferencesWebClient", mockWebClient)
+
+        val request = OrderRequest(restaurantId = 1L, items = listOf(OrderItemRequest(dishId = 3L, quantity = 1)))
+        val response = orderService.createOrder(1L, request, "user")
+
+        assertNotNull(response)
+        Mockito.verify(mockWebClient).get()
+    }
+
+    @Test
+    fun `createOrder should treat blank username as anonymous`() {
+        val restaurant = createRestaurant(1L)
+        val dish = createDish(3L, "Pizza", BigDecimal("8.00"), true, restaurant)
+
+        Mockito.`when`(restaurantRepository.findById(1L)).thenReturn(Optional.of(restaurant))
+        Mockito.`when`(dishRepository.findByRestaurantId(1L)).thenReturn(listOf(dish))
+        Mockito.`when`(orderRepository.save(Mockito.any(Order::class.java))).thenAnswer { invocation ->
+            invocation.getArgument<Order>(0).also { ReflectionTestUtils.setField(it, "id", 50L) }
+        }
+
+        val request = OrderRequest(restaurantId = 1L, items = listOf(OrderItemRequest(dishId = 3L, quantity = 1)))
+
+        val response = orderService.createOrder(1L, request, "   ")
+
+        assertEquals(50L, response.id)
+        Mockito.verify(orderRepository, Mockito.never()).findLatestActiveOrderByClientUser(
+            Mockito.anyString(), Mockito.anyLong(), Mockito.anyList()
+        )
+    }
+
+    @Test
+    fun `createOrder should proceed without conflict when preferences has no matching allergens`() {
+        val restaurant = createRestaurant(1L)
+        val dish = createDish(3L, "Pizza", BigDecimal("8.00"), true, restaurant)
+        dish.allergens.add(Allergen.GLUTEN)
+
+        Mockito.`when`(restaurantRepository.findById(1L)).thenReturn(Optional.of(restaurant))
+        Mockito.`when`(dishRepository.findByRestaurantId(1L)).thenReturn(listOf(dish))
+        Mockito.`when`(dishRepository.findById(3L)).thenReturn(Optional.of(dish))
+        Mockito.`when`(orderRepository.findLatestActiveOrderByClientUser("user", 1L, listOf(OrderStatus.PAID, OrderStatus.RETURNED)))
+            .thenReturn(Optional.empty())
+        Mockito.`when`(orderRepository.save(Mockito.any(Order::class.java))).thenAnswer { invocation ->
+            invocation.getArgument<Order>(0).also { ReflectionTestUtils.setField(it, "id", 51L) }
+        }
+
+        val mockWebClient = mockWebClientCall(Mono.just(ClientPreferenceResponse(username = "user", allergens = listOf("LACTOSE"))))
+        ReflectionTestUtils.setField(orderService, "clientPreferencesWebClient", mockWebClient)
+
+        val request = OrderRequest(restaurantId = 1L, items = listOf(OrderItemRequest(dishId = 3L, quantity = 1)))
+
+        val response = orderService.createOrder(1L, request, "user")
+
+        assertEquals(51L, response.id)
+    }
+
+    @Test
     fun `getOrderByIdForOwnershipCheck should return order when found`() {
         val restaurant = createRestaurant(1L)
         val order = createOrder(30L, restaurant, "user", OrderStatus.PENDING)
@@ -611,6 +731,17 @@ class OrderServiceTest {
 
         assertThrows(ForbiddenAccessException::class.java) {
             orderService.deleteOrder(1L, 17L, username = null, isWaiter = false)
+        }
+    }
+
+    @Test
+    fun `deleteOrder should throw when username is blank but not null`() {
+        val restaurant = createRestaurant(1L)
+        val order = createOrder(41L, restaurant, "user", OrderStatus.PENDING)
+        Mockito.`when`(orderRepository.findByRestaurantIdAndId(1L, 41L)).thenReturn(Optional.of(order))
+
+        assertThrows(ForbiddenAccessException::class.java) {
+            orderService.deleteOrder(1L, 41L, username = "   ", isWaiter = false)
         }
     }
 

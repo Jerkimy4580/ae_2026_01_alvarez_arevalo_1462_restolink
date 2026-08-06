@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
@@ -73,6 +74,55 @@ class ClientPreferenceServiceTest {
     }
 
     @Test
+    fun `saveOrUpdatePreferences should replace old allergens entirely, not merge them`() {
+        // Arrange: el usuario ya tenía NUTS y SOY, y ahora manda solo GLUTEN.
+        // Cubre explícitamente que preference.allergens.clear() se ejecuta antes del addAll.
+        val username = "user6"
+        val existingPreference = ClientPreference(
+            id = 6L,
+            username = username,
+            allergens = mutableSetOf(Allergen.NUTS, Allergen.SOY)
+        )
+        val request = ClientPreferenceRequest(username = username, allergens = listOf("gluten"))
+
+        Mockito.`when`(clientPreferenceRepository.findByUsername(username)).thenReturn(Optional.of(existingPreference))
+        Mockito.`when`(clientPreferenceRepository.save(Mockito.any(ClientPreference::class.java))).thenAnswer { invocation ->
+            invocation.getArgument<ClientPreference>(0)
+        }
+
+        // Act
+        val response = clientPreferenceService.saveOrUpdatePreferences(username, request)
+
+        // Assert
+        assertEquals(listOf("GLUTEN"), response.allergens)
+        assertTrue(!response.allergens.contains("NUTS"))
+        assertTrue(!response.allergens.contains("SOY"))
+    }
+
+    @Test
+    fun `saveOrUpdatePreferences should save empty allergens when request list is empty`() {
+        // Arrange: cubre el caso en que allergens llega vacío (map sobre lista vacía)
+        val username = "user7"
+        val existingPreference = ClientPreference(
+            id = 7L,
+            username = username,
+            allergens = mutableSetOf(Allergen.GLUTEN)
+        )
+        val request = ClientPreferenceRequest(username = username, allergens = emptyList())
+
+        Mockito.`when`(clientPreferenceRepository.findByUsername(username)).thenReturn(Optional.of(existingPreference))
+        Mockito.`when`(clientPreferenceRepository.save(Mockito.any(ClientPreference::class.java))).thenAnswer { invocation ->
+            invocation.getArgument<ClientPreference>(0)
+        }
+
+        // Act
+        val response = clientPreferenceService.saveOrUpdatePreferences(username, request)
+
+        // Assert
+        assertTrue(response.allergens.isEmpty())
+    }
+
+    @Test
     fun `saveOrUpdatePreferences should throw IllegalArgumentException for unsupported allergen`() {
         // Arrange
         val username = "user3"
@@ -84,6 +134,21 @@ class ClientPreferenceServiceTest {
         assertThrows(IllegalArgumentException::class.java) {
             clientPreferenceService.saveOrUpdatePreferences(username, request)
         }
+    }
+
+    @Test
+    fun `saveOrUpdatePreferences should throw on first unsupported allergen even if others are valid`() {
+        // Arrange: mezcla de alérgeno válido e inválido, cubre que el map corta en el primer fallo
+        val username = "user8"
+        val request = ClientPreferenceRequest(username = username, allergens = listOf("gluten", "invalido"))
+
+        Mockito.`when`(clientPreferenceRepository.findByUsername(username)).thenReturn(Optional.empty())
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException::class.java) {
+            clientPreferenceService.saveOrUpdatePreferences(username, request)
+        }
+        Mockito.verify(clientPreferenceRepository, Mockito.never()).save(Mockito.any(ClientPreference::class.java))
     }
 
     @Test

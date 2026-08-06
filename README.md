@@ -175,7 +175,6 @@ Usar estos archivos para ejecutar los flujos de autenticación y los endpoints p
 
 Pruebas de los test:
 
-![alt text](image.png)
+![alt text](test1.png)
 
-
-![alt text](image-1.png)
+![alt text](test2.png)
