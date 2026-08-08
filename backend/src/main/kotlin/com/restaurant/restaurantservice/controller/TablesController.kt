@@ -24,13 +24,13 @@ class TablesController(
     fun getTables(@PathVariable restaurantId: Long): List<TableResponse> = tableService.getTablesByRestaurant(restaurantId)
 
     @PostMapping
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     fun createTable(@PathVariable restaurantId: Long, @RequestBody request: TableRequest): TableResponse =
         tableService.createTable(restaurantId, request)
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun updateTable(
         @PathVariable restaurantId: Long,
         @PathVariable id: Long,

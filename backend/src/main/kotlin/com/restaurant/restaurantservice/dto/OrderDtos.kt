@@ -7,7 +7,8 @@ import java.time.Instant
 data class OrderRequest(
     val restaurantId: Long,
     val tableId: Long? = null,
-    val items: List<OrderItemRequest>
+    val items: List<OrderItemRequest>,
+    val force: Boolean = false
 )
 
 data class OrderItemRequest(

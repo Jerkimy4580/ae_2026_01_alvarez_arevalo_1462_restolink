@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -21,14 +22,12 @@ class WaitersController(
 ) {
 
     @PostMapping("/assign")
-    @PreAuthorize("hasRole('WAITER')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     fun assignToRestaurant(
-        @RequestBody request: WaiterAssignmentRequest,
-        authentication: Authentication
+        @Valid @RequestBody request: WaiterAssignmentRequest
     ): RestaurantResponse {
-        val waiterUserId = extractUserId(authentication)
-        return waiterService.assignWaiterToRestaurant(request.restaurantId, waiterUserId)
+        return waiterService.assignWaiterToRestaurant(request.restaurantId, request.waiterUserId)
     }
 
     @GetMapping("/me/restaurant")

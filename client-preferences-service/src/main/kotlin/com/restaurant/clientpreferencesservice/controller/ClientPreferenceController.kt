@@ -40,7 +40,7 @@ class ClientPreferenceController(
     }
 
     @GetMapping("/{username}")
-    @PreAuthorize("hasRole('CLIENT') or hasRole('CHEF') or hasRole('WAITER')")
+    @PreAuthorize("hasRole('CLIENT') or hasRole('ADMIN') or hasRole('WAITER')")
     fun getPreferences(
         @AuthenticationPrincipal jwt: Jwt,
         @PathVariable username: String

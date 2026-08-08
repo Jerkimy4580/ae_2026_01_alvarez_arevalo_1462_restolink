@@ -27,13 +27,13 @@ class DishesController(
     fun getDishes(@PathVariable restaurantId: Long): List<DishResponse> = dishService.getAllDishes(restaurantId)
 
     @PostMapping
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     fun createDish(@PathVariable restaurantId: Long, @RequestBody request: DishRequest): DishResponse =
         dishService.createDish(restaurantId, request)
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun updateDish(
         @PathVariable restaurantId: Long,
         @PathVariable id: Long,
@@ -41,7 +41,7 @@ class DishesController(
     ): DishResponse = dishService.updateDish(restaurantId, id, request)
 
     @PutMapping("/{id}/availability")
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun updateAvailability(
         @PathVariable restaurantId: Long,
         @PathVariable id: Long,
@@ -49,7 +49,7 @@ class DishesController(
     ): DishResponse = dishService.updateAvailability(restaurantId, id, request)
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteDish(@PathVariable restaurantId: Long, @PathVariable id: Long) {
         dishService.deleteDish(restaurantId, id)

@@ -40,6 +40,13 @@ class GlobalExceptionHandler {
         return problem
     }
 
+    @ExceptionHandler(InvalidOrderStateException::class)
+    fun handleInvalidOrderState(ex: InvalidOrderStateException): ProblemDetail {
+        val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.message ?: "Invalid order state")
+        problem.title = "Bad request"
+        return problem
+    }
+
     @ExceptionHandler(AllergenConflictException::class)
     fun handleAllergenConflict(ex: AllergenConflictException): ProblemDetail {
         val problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.message ?: "Allergen conflict")

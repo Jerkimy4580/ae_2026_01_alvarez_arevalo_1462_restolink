@@ -17,8 +17,8 @@ class TableEntity(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
-    @Column(nullable = false)
-    var number: Int,
+    @Column(name = "reference", nullable = false)
+    var reference: String,
 
     @Column(nullable = false)
     var capacity: Int,

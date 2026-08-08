@@ -9,3 +9,5 @@ class InvalidOrderStatusException(message: String) : RuntimeException(message)
 class AllergenConflictException(message: String) : RuntimeException(message)
 
 class DuplicateResourceException(message: String) : RuntimeException(message)
+
+class InvalidOrderStateException(message: String) : RuntimeException(message)

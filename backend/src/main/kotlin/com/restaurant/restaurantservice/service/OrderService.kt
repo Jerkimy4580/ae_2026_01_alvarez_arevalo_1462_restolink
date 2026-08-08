@@ -9,6 +9,7 @@ import com.restaurant.restaurantservice.entity.OrderItem
 import com.restaurant.restaurantservice.entity.OrderStatus
 import com.restaurant.restaurantservice.exception.AllergenConflictException
 import com.restaurant.restaurantservice.exception.ForbiddenAccessException
+import com.restaurant.restaurantservice.exception.InvalidOrderStateException
 import com.restaurant.restaurantservice.exception.InvalidOrderStatusException
 import com.restaurant.restaurantservice.exception.ResourceNotFoundException
 import com.restaurant.restaurantservice.mapper.toResponse
@@ -106,9 +107,9 @@ class OrderServiceImpl(
                         .map { allergen -> Pair(item.dishName, allergen.name) }
                 }
 
-                if (conflicts.isNotEmpty()) {
+                if (conflicts.isNotEmpty() && !request.force) {
                     val conflict = conflicts.first()
-                    throw AllergenConflictException("This dish ${conflict.first} contains ${conflict.second}, to which you are allergic.")
+                    throw AllergenConflictException("This dish ${conflict.first} contains ${conflict.second}, to which you are allergic. If you want to proceed anyway, resend the order with force=true.")
                 }
             }
         }
@@ -155,7 +156,7 @@ class OrderServiceImpl(
         }
 
         if (order.status != OrderStatus.PENDING) {
-            throw IllegalStateException("This order can no longer be deleted. Please contact the waiter.")
+            throw InvalidOrderStateException("This order can no longer be deleted. Please contact the waiter.")
         }
 
         orderRepository.delete(order)

@@ -13,6 +13,7 @@ import com.restaurant.restaurantservice.entity.Restaurant
 import com.restaurant.restaurantservice.entity.TableEntity
 import com.restaurant.restaurantservice.exception.AllergenConflictException
 import com.restaurant.restaurantservice.exception.ForbiddenAccessException
+import com.restaurant.restaurantservice.exception.InvalidOrderStateException
 import com.restaurant.restaurantservice.exception.InvalidOrderStatusException
 import com.restaurant.restaurantservice.exception.ResourceNotFoundException
 import com.restaurant.restaurantservice.repository.DishRepository
@@ -76,7 +77,7 @@ class OrderServiceTest {
 
     private fun createTable(id: Long?, restaurant: Restaurant): TableEntity {
         val table = TableEntity(
-            number = 1,
+            reference = "A1",
             capacity = 4,
             restaurant = restaurant
         )
@@ -620,7 +621,7 @@ class OrderServiceTest {
         val order = createOrder(18L, restaurant, "user", OrderStatus.PAID)
         Mockito.`when`(orderRepository.findByRestaurantIdAndId(1L, 18L)).thenReturn(Optional.of(order))
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(InvalidOrderStateException::class.java) {
             orderService.deleteOrder(1L, 18L, username = "user", isWaiter = false)
         }
     }

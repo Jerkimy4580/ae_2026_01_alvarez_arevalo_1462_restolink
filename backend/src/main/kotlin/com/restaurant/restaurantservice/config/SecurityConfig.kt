@@ -14,21 +14,21 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 class SecurityConfig {
 
-    /**
-     * Cadena 1: Rutas de Autenticación Públicas.
-     * Al no incluir .oauth2ResourceServer(), se inhabilita el filtro de validación JWT para estas rutas.
-     */
     @Bean
     @Order(1)
     fun authSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .securityMatcher("/api/auth/**")
+            .cors { it.configurationSource(corsConfigurationSource()) }
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
@@ -38,21 +38,23 @@ class SecurityConfig {
         return http.build()
     }
 
-    /**
-     * Cadena 2: Resto de la API con validación JWT obligatoria.
-     */
     @Bean
     @Order(2)
     fun apiSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
+            .cors { it.configurationSource(corsConfigurationSource()) }
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
+                    // Preflights (OPTIONS) permitidos globalmente
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    // Endpoints públicos de lectura (GET)
                     .requestMatchers(HttpMethod.GET, "/api/v1/franchises", "/api/v1/franchises/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/restaurants", "/api/v1/restaurants/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/*/dishes", "/api/v1/restaurants/*/dishes/**").permitAll()
                     .requestMatchers("/actuator/health").permitAll()
+                    // Cualquier otra petición requiere autenticación por Token
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->
@@ -67,6 +69,24 @@ class SecurityConfig {
             }
 
         return http.build()
+    }
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val configuration = CorsConfiguration().apply {
+            allowedOriginPatterns = listOf(
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+            )
+            allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            allowedHeaders = listOf("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin")
+            exposedHeaders = listOf("Authorization")
+            allowCredentials = true
+            maxAge = 3600L
+        }
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", configuration)
+        return source
     }
 
     @Bean

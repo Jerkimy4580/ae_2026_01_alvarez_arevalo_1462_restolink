@@ -34,10 +34,6 @@ class TableServiceImpl(
         val restaurant = restaurantRepository.findById(restaurantId)
             .orElseThrow { ResourceNotFoundException("Restaurant not found: $restaurantId") }
 
-        if (tableRepository.findByRestaurantId(restaurantId).isNotEmpty()) {
-            throw DuplicateResourceException("A table already exists for this restaurant. Edit the existing table instead.")
-        }
-
         val table = request.toEntity(restaurant)
         return tableRepository.save(table).toResponse()
     }
@@ -54,7 +50,7 @@ class TableServiceImpl(
             throw ResourceNotFoundException("Table not found in restaurant: $restaurantId")
         }
 
-        table.number = request.number
+        table.reference = request.reference
         table.capacity = request.capacity
         return tableRepository.save(table).toResponse()
     }

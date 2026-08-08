@@ -25,7 +25,7 @@ class RestaurantsController(
     fun getRestaurants(): List<RestaurantResponse> = restaurantService.getAllRestaurants()
 
     @PostMapping
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     fun createRestaurant(
         @RequestBody request: RestaurantRequest,

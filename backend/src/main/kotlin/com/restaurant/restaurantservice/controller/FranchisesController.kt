@@ -23,7 +23,7 @@ class FranchisesController(
     fun getFranchises(): List<FranchiseResponse> = franchiseService.getAllFranchises()
 
     @PostMapping
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     fun createFranchise(@RequestBody request: FranchiseRequest): FranchiseResponse = franchiseService.createFranchise(request)
 

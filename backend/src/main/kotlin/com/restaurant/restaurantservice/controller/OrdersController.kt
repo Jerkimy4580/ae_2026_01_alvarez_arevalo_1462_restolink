@@ -37,7 +37,7 @@ class OrdersController(
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('WAITER', 'CHEF')")
+    @PreAuthorize("hasAnyRole('WAITER', 'ADMIN')")
     fun updateOrderStatus(
         @PathVariable restaurantId: Long,
         @PathVariable id: Long,
@@ -69,7 +69,7 @@ class OrdersController(
     fun getWaiterOrders(@PathVariable restaurantId: Long): List<OrderResponse> = orderService.getOrdersForWaiter(restaurantId)
 
     @GetMapping("/kitchen")
-    @PreAuthorize("hasRole('CHEF')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getKitchenOrders(@PathVariable restaurantId: Long): List<OrderResponse> = orderService.getKitchenOrders(restaurantId)
 
     private fun extractUsername(authentication: Authentication): String {

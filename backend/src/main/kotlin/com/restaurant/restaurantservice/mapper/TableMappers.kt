@@ -6,14 +6,14 @@ import com.restaurant.restaurantservice.entity.Restaurant
 import com.restaurant.restaurantservice.entity.TableEntity
 
 fun TableRequest.toEntity(restaurant: Restaurant): TableEntity = TableEntity(
-    number = number,
+    reference = reference,
     capacity = capacity,
     restaurant = restaurant
 )
 
 fun TableEntity.toResponse(): TableResponse = TableResponse(
     id = id,
-    number = number,
+    reference = reference,
     capacity = capacity,
     restaurantId = restaurant.id ?: -1
 )

@@ -9,6 +9,7 @@ import com.restaurant.restaurantservice.repository.RestaurantRepository
 import com.restaurant.restaurantservice.repository.RestaurantWaiterRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 interface WaiterService {
     fun assignWaiterToRestaurant(restaurantId: Long, waiterUserId: String): RestaurantResponse
@@ -23,19 +24,23 @@ class WaiterServiceImpl(
 
     @Transactional
     override fun assignWaiterToRestaurant(restaurantId: Long, waiterUserId: String): RestaurantResponse {
-        if (restaurantWaiterRepository.existsByWaiterUserId(waiterUserId)) {
-            throw DuplicateResourceException("Waiter '$waiterUserId' is already assigned to a restaurant")
-        }
-
         val restaurant = restaurantRepository.findById(restaurantId)
             .orElseThrow { ResourceNotFoundException("Restaurant not found: $restaurantId") }
 
-        restaurantWaiterRepository.save(
-            RestaurantWaiter(
-                waiterUserId = waiterUserId,
-                restaurant = restaurant
+        val existing = restaurantWaiterRepository.findByWaiterUserId(waiterUserId)
+        if (existing.isPresent) {
+            val assignment = existing.get()
+            assignment.restaurant = restaurant
+            assignment.assignedAt = Instant.now()
+            restaurantWaiterRepository.save(assignment)
+        } else {
+            restaurantWaiterRepository.save(
+                RestaurantWaiter(
+                    waiterUserId = waiterUserId,
+                    restaurant = restaurant
+                )
             )
-        )
+        }
 
         return restaurant.toResponse()
     }
