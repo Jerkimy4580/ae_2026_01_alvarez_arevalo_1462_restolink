@@ -39,9 +39,17 @@ class WaitersController(
 
     private fun extractUserId(authentication: Authentication): String {
         val principal = authentication.principal
-        return when (principal) {
-            is Jwt -> (principal.claims["username"] as? String ?: principal.subject ?: authentication.name)
+        val userId = when (principal) {
+            is Jwt -> {
+                (principal.claims["cognito:username"] as? String)
+                    ?: (principal.claims["username"] as? String)
+                    ?: (principal.claims["name"] as? String)
+                    ?: principal.subject
+                    ?: authentication.name
+            }
             else -> authentication.name
         }
+        println("DEBUG: waiterUserId resuelto desde el JWT de Cognito = '$userId'")
+        return userId
     }
 }
