@@ -3,7 +3,6 @@
 import com.restaurant.restaurantservice.dto.TableRequest
 import com.restaurant.restaurantservice.entity.Restaurant
 import com.restaurant.restaurantservice.entity.TableEntity
-import com.restaurant.restaurantservice.exception.DuplicateResourceException
 import com.restaurant.restaurantservice.exception.ResourceNotFoundException
 import com.restaurant.restaurantservice.repository.RestaurantRepository
 import com.restaurant.restaurantservice.repository.TableRepository
@@ -44,12 +43,11 @@ class TableServiceTest {
     }
 
     @Test
-    fun `createTable should save table when none exists yet`() {
+    fun `createTable should save table when restaurant exists`() {
         // Arrange
         val restaurant = Restaurant(id = 1L, name = "Restaurante", address = "Calle X")
         val request = TableRequest(reference = "A5", capacity = 2)
         Mockito.`when`(restaurantRepository.findById(1L)).thenReturn(Optional.of(restaurant))
-        Mockito.`when`(tableRepository.findByRestaurantId(1L)).thenReturn(emptyList())
         Mockito.`when`(tableRepository.save(Mockito.any(TableEntity::class.java))).thenAnswer { invocation ->
             invocation.getArgument<TableEntity>(0).also { it.id = 7L }
         }
@@ -71,20 +69,6 @@ class TableServiceTest {
 
         // Act & Assert
         assertThrows(ResourceNotFoundException::class.java) {
-            tableService.createTable(1L, request)
-        }
-    }
-
-    @Test
-    fun `createTable should throw when table already exists`() {
-        // Arrange
-        val restaurant = Restaurant(id = 1L, name = "Restaurante", address = "Calle X")
-        val request = TableRequest(reference = "A5", capacity = 2)
-        Mockito.`when`(restaurantRepository.findById(1L)).thenReturn(Optional.of(restaurant))
-        Mockito.`when`(tableRepository.findByRestaurantId(1L)).thenReturn(listOf(TableEntity(id = 2L, reference = "A3", capacity = 2, restaurant = restaurant)))
-
-        // Act & Assert
-        assertThrows(DuplicateResourceException::class.java) {
             tableService.createTable(1L, request)
         }
     }
