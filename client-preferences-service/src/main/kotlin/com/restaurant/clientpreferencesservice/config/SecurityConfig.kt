@@ -28,6 +28,7 @@ class SecurityConfig {
             .csrf { it.disable() }
             .authorizeHttpRequests { auth ->
                 auth
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/preferences", "/api/v1/preferences/**").authenticated()
                     .requestMatchers("/actuator/health").permitAll()
                     .anyRequest().authenticated()
@@ -49,7 +50,14 @@ class SecurityConfig {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration().apply {
-            allowedOriginPatterns = listOf("http://localhost:*", "http://127.0.0.1:*")
+            allowedOriginPatterns = listOf(
+                "http://localhost",
+                "http://localhost:*",
+                "https://localhost",
+                "capacitor://localhost",
+                "http://107.20.92.91",
+                "http://107.20.92.91:*"
+            )
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin")
             exposedHeaders = listOf("Authorization")
